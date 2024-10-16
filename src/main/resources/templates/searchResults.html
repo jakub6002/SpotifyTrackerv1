@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wyniki wyszukiwania</title>
+</head>
+<body>
+<h1>Wyniki wyszukiwania dla "{{ query }}"</h1>
+<ul>
+    <th:block th:each="track : ${searchResults}">
+        <li th:text="${track.name} + ' - ' + ${track.artist}"></li>
+    </th:block>
+</ul>
+</body>
+</html>
