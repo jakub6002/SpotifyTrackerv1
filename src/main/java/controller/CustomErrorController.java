@@ -11,7 +11,7 @@ public class CustomErrorController implements ErrorController {
     @RequestMapping("/error")
     public String handleError() {
         // Możesz tutaj zdefiniować logikę, która będzie wyświetlana w przypadku błędów
-        return "Customerror";
+        return "customError";
     }
 
 }

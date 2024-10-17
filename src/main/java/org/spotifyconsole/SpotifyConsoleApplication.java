@@ -26,7 +26,6 @@ public class SpotifyConsoleApplication implements CommandLineRunner {
         SpringApplication.run(SpotifyConsoleApplication.class, args);
     }
 
-
     @Override
     public void run(String... args) throws Exception {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -38,4 +37,5 @@ public class SpotifyConsoleApplication implements CommandLineRunner {
             System.out.println("User is not authenticated. Cannot retrieve Spotify data.");
         }
     }
+
 }

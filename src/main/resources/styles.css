@@ -1,0 +1,45 @@
+body {
+    background-color: #1DB954;
+    color: white;
+    font-family: 'Helvetica', sans-serif;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+    border-radius: 15px;
+    background-color: #2C3E50;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+}
+
+h1, h2 {
+    font-weight: bold;
+}
+
+.footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: #222;
+    color: white;
+    text-align: center;
+    padding: 10px 0;
+}
+
+.navbar {
+    background-color: #222;
+}
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.card {
+    animation: fadeIn 1s ease-in;
+}

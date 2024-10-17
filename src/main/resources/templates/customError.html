@@ -1,12 +1,17 @@
+<!-- src/main/resources/templates/error.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wystąpił błąd</title>
+    <title>Spotify Tracker - Error</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-<h1>Wystąpił błąd!</h1>
-<p>Proszę spróbować ponownie później.</p>
+<div class="container mt-5 text-center">
+    <h1>Oops! Something went wrong.</h1>
+    <p>An error occurred while processing your request.</p>
+    <a href="/home" class="btn btn-primary mt-3">Go Back Home</a>
+</div>
 </body>
 </html>

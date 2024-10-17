@@ -24,23 +24,19 @@ public class SpotifyController {
 
     @GetMapping("/login")
     public String login() {
+        System.out.println("Login page accessed");
         return "login";  // Render custom login page
     }
 
-    @GetMapping("/login/oauth2/code/spotify")
-    public String handleSpotifyRedirect() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication instanceof OAuth2AuthenticationToken) {
-            OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
-
-            spotifyService.printUserTopArtists(authToken);
-            spotifyService.printUserTopTracks(authToken);
-            return "redirect:/success";  // Redirect to success page after login
-        } else {
-            System.out.println("User is not authenticated.");
-            return "error";  // Redirect to error page if not authenticated
-        }
+    @GetMapping("/success")
+    public String successPage() {
+        System.out.println("Success page acessed");
+        return "success";  // Zwraca widok success.html
     }
+
+
+
+
 
     @GetMapping("/search")
     public String searchTracks(@RequestParam("query") String query, Model model, OAuth2AuthenticationToken authenticationToken) {
@@ -48,5 +44,6 @@ public class SpotifyController {
         model.addAttribute("searchResults", searchResults);
         return "searchResults";
     }
+
 
 }

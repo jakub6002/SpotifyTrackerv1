@@ -1,22 +1,23 @@
 package model;
 
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
 public class Track {
-
     private String name;
-    private String artist;
+    private String artistName;
 
-    public Track(){}
-
-
-    public Track(String name, String artist) {
-        this.name = name;
-        this.artist = artist;
+    // Getters and setters
+    public String getName() {
+        return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
 
+    public String getArtistName() {
+        return artistName;
+    }
+
+    public void setArtistName(String artistName) {
+        this.artistName = artistName;
+    }
 }

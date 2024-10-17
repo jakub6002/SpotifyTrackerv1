@@ -1,5 +1,8 @@
 package service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import model.Artist;
 import model.Track;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -8,6 +11,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -22,81 +26,126 @@ public class SpotifyService {
         this.authorizedClientService = authorizedClientService;
     }
 
-    public List<Track> getUserTopTracks(OAuth2AuthenticationToken authenticationToken) {
+    private OAuth2AuthorizedClient getAuthorizedClient(OAuth2AuthenticationToken authenticationToken) {
         OAuth2AuthorizedClient authorizedClient = authorizedClientService.loadAuthorizedClient(
                 authenticationToken.getAuthorizedClientRegistrationId(),
                 authenticationToken.getName());
 
         if (authorizedClient == null) {
-            System.out.println("No authorized client found.");
+            System.out.println("No authorized client found. Authentication failed or client not properly registered.");
+        }
+
+        return authorizedClient;
+    }
+
+    private String getAccessToken(OAuth2AuthorizedClient authorizedClient) {
+        if (authorizedClient != null) {
+            return authorizedClient.getAccessToken().getTokenValue();
+        }
+        return null;
+    }
+
+    public List<Track> getUserTopTracks(OAuth2AuthenticationToken authenticationToken) {
+        System.out.println("Fetching user top tracks...");
+
+        OAuth2AuthorizedClient authorizedClient = getAuthorizedClient(authenticationToken);
+        String accessToken = getAccessToken(authorizedClient);
+
+        if (accessToken == null) {
             return List.of();
         }
 
-        String accessToken = authorizedClient.getAccessToken().getTokenValue();
-
-        return webClient.get()
+        String response = webClient.get()
                 .uri("/me/top/tracks")
                 .header("Authorization", "Bearer " + accessToken)
                 .retrieve()
-                .bodyToFlux(Track.class)
-                .collectList()
+                .bodyToMono(String.class)
                 .block();
+
+        List<Track> tracks = new ArrayList<>();
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode root = objectMapper.readTree(response);
+            JsonNode items = root.get("items");
+
+            if (items != null) {
+                for (JsonNode item : items) {
+                    Track track = new Track();
+                    track.setName(item.get("name").asText());
+                    if (item.has("artists") && item.get("artists").isArray()) {
+                        JsonNode artistNode = item.get("artists").get(0);
+                        track.setArtistName(artistNode.get("name").asText());
+                    }
+                    tracks.add(track);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        if (!tracks.isEmpty()) {
+            System.out.println("Successfully retrieved " + tracks.size() + " top tracks from Spotify API.");
+        } else {
+            System.out.println("No top tracks found or failed to retrieve top tracks from Spotify API.");
+        }
+
+        return tracks;
     }
 
-    public List<Track> getUserTopArtists(OAuth2AuthenticationToken authenticationToken) {
-        OAuth2AuthorizedClient authorizedClient = authorizedClientService.loadAuthorizedClient(
-                authenticationToken.getAuthorizedClientRegistrationId(),
-                authenticationToken.getName());
+    public List<Artist> getUserTopArtists(OAuth2AuthenticationToken authenticationToken) {
+        System.out.println("Fetching user top artists...");
 
-        if (authorizedClient == null) {
-            System.out.println("No authorized client found.");
+        OAuth2AuthorizedClient authorizedClient = getAuthorizedClient(authenticationToken);
+        String accessToken = getAccessToken(authorizedClient);
+
+        if (accessToken == null) {
             return List.of();
         }
 
-        String accessToken = authorizedClient.getAccessToken().getTokenValue();
-
-        return webClient.get()
+        String response = webClient.get()
                 .uri("/me/top/artists")
                 .header("Authorization", "Bearer " + accessToken)
                 .retrieve()
-                .bodyToFlux(Track.class)
-                .collectList()
+                .bodyToMono(String.class)
                 .block();
-    }
 
-    public void printUserTopTracks(OAuth2AuthenticationToken authenticationToken) {
-        List<Track> tracks = getUserTopTracks(authenticationToken);
-        if (!tracks.isEmpty()) {
-            System.out.println("Top Tracks:");
-            tracks.forEach(track -> System.out.println(track.getName() + " by " + track.getArtist()));
-        } else {
-            System.out.println("No tracks found.");
+        List<Artist> artists = new ArrayList<>();
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode root = objectMapper.readTree(response);
+            JsonNode items = root.get("items");
+
+            if (items != null) {
+                for (JsonNode item : items) {
+                    Artist artist = new Artist();
+                    artist.setName(item.get("name").asText());
+                    artists.add(artist);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-    }
 
-    public void printUserTopArtists(OAuth2AuthenticationToken authenticationToken) {
-        List<Track> artists = getUserTopArtists(authenticationToken);
         if (!artists.isEmpty()) {
-            System.out.println("Top Artists:");
-            artists.forEach(artist -> System.out.println(artist.getName()));
+            System.out.println("Successfully retrieved " + artists.size() + " top artists from Spotify API.");
         } else {
-            System.out.println("No artists found.");
+            System.out.println("No top artists found or failed to retrieve top artists from Spotify API.");
         }
+
+        return artists;
     }
 
     public List<Track> searchTracks(String query, OAuth2AuthenticationToken authenticationToken) {
-        OAuth2AuthorizedClient authorizedClient = authorizedClientService.loadAuthorizedClient(
-                authenticationToken.getAuthorizedClientRegistrationId(),
-                authenticationToken.getName());
+        System.out.println("Searching tracks with query: " + query);
 
-        if (authorizedClient == null) {
-            System.out.println("Brak autoryzowanego klienta dla użytkownika.");
+        OAuth2AuthorizedClient authorizedClient = getAuthorizedClient(authenticationToken);
+        String accessToken = getAccessToken(authorizedClient);
+
+        if (accessToken == null) {
             return List.of();
         }
 
-        String accessToken = authorizedClient.getAccessToken().getTokenValue();
-
-        return webClient.get()
+        String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/search")
                         .queryParam("q", query)
@@ -104,9 +153,46 @@ public class SpotifyService {
                         .build())
                 .header("Authorization", "Bearer " + accessToken)
                 .retrieve()
-                .bodyToFlux(Track.class)
-                .collectList()
+                .bodyToMono(String.class)
                 .block();
+
+        List<Track> tracks = new ArrayList<>();
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode root = objectMapper.readTree(response);
+            JsonNode items = root.get("tracks").get("items");
+
+            if (items != null) {
+                for (JsonNode item : items) {
+                    Track track = new Track();
+                    track.setName(item.get("name").asText());
+                    if (item.has("artists") && item.get("artists").isArray()) {
+                        JsonNode artistNode = item.get("artists").get(0);
+                        track.setArtistName(artistNode.get("name").asText());
+                    }
+                    tracks.add(track);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        if (!tracks.isEmpty()) {
+            System.out.println("Successfully retrieved " + tracks.size() + " tracks from search query: " + query);
+        } else {
+            System.out.println("No tracks found or failed to retrieve tracks from search query: " + query);
+        }
+
+        return tracks;
     }
 
+    public void printUserTopTracks(OAuth2AuthenticationToken authenticationToken) {
+        List<Track> tracks = getUserTopTracks(authenticationToken);
+        if (!tracks.isEmpty()) {
+            System.out.println("Top Tracks:");
+            tracks.forEach(track -> System.out.println(track.getName() + " by " + track.getArtistName()));
+        } else {
+            System.out.println("No tracks found.");
+        }
+    }
 }
