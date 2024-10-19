@@ -12,40 +12,58 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            background-image: url('/images/music-background.jpg');
-            background-size: cover;
-            background-attachment: fixed;
-            color: #f1f1f1;
+            background: linear-gradient(to bottom, #f5f5f5, #e8e8e8);
+            color: #333;
             font-family: 'Montserrat', sans-serif;
             overflow-x: hidden;
+            padding-bottom: 50px;
         }
         .navbar {
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: #333;
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        .navbar-brand img {
+            width: 40px;
+            margin-right: 10px;
         }
         h1 {
             font-weight: bold;
-            font-size: 3.5rem;
+            font-size: 3rem;
             animation: fadeInDown 2s ease-out;
         }
         .card {
-            background-color: rgba(44, 62, 80, 0.9);
+            background-color: #ffffff;
             border-radius: 15px;
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
             overflow: hidden;
-            transition: transform 0.4s, box-shadow 0.4s;
+            min-width: 250px;
+            max-width: 300px;
+            margin: 20px;
+            flex: 1 1 250px;
         }
         .card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.5);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
         }
         .card-body {
             position: relative;
-            padding: 2rem;
-            color: #f1f1f1;
+            padding: 1rem;
+            color: #333;
         }
         .card-title {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-text {
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .btn-primary {
             background-color: #1DB954;
@@ -72,30 +90,73 @@
         .footer {
             margin-top: 50px;
             padding: 15px;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: #333;
             color: #f1f1f1;
             text-align: center;
             font-size: 1rem;
+            border-radius: 10px;
         }
         .icon-container {
             position: absolute;
             top: 10px;
             right: 10px;
             color: #1DB954;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
         }
         .container {
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(255, 255, 255, 0.85);
             border-radius: 20px;
             padding: 40px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+        .card-deck {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        .card-img-top {
+            max-height: 150px;
+            object-fit: cover;
+        }
+        .mood-buttons {
+            margin-bottom: 20px;
+        }
+        .mood-button {
+            background-color: #1DB954;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .mood-button:hover {
+            background-color: #17a149;
+        }
+        .recommendation {
+            margin-bottom: 20px;
+        }
+        .track-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .track-info img {
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            object-fit: cover;
         }
     </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark">
     <a class="navbar-brand" href="#">
-        <img src="/images/spotify-logo.png" alt="Spotify Logo" style="width: 40px; margin-right: 10px;">Spotify Tracker
+        <img src="/images/spotify-logo.png" alt="Spotify Logo">Spotify Tracker
     </a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
@@ -110,49 +171,207 @@
 </nav>
 
 <div class="container text-center mt-5">
-    <h1>Welcome back, <span th:text="${authentication.principal.attributes['display_name']}"></span>!</h1>
+    <h1>Welcome back, <span th:text="${authentication != null ? authentication.principal.attributes['display_name'] : 'Guest'}">Guest</span>!</h1>
     <p class="lead">Here's a look at your top tracks and artists on Spotify.</p>
 
-    <div class="col-md-6 mb-5">
+    <!-- Time range selection dropdown -->
+    <div class="mb-4">
+        <label for="timeRangeSelect">Select Time Range:</label>
+        <select id="timeRangeSelect" class="form-control" onchange="changeTimeRange(this.value)">
+            <option th:value="short_term" th:selected="${timeRange == 'short_term'}">Last 4 weeks</option>
+            <option th:value="medium_term" th:selected="${timeRange == 'medium_term'}">Last 6 months</option>
+            <option th:value="long_term" th:selected="${timeRange == 'long_term'}">All Time</option>
+        </select>
+    </div>
+
+    <!-- Top Tracks Section -->
+    <div class="mb-5">
         <h2 class="mb-4">Your Top Tracks</h2>
         <div class="card-deck">
             <div class="card mb-4" th:each="track : ${topTracks}">
-                <div class="icon-container">
-                    <i class="fas fa-music"></i>
-                </div>
-                <div class="card-body">
-                    <h5 class="card-title" th:text="${track.name}"></h5>
-                    <p class="card-text" th:text="${track.artistName}"></p>
-                </div>
+                <a th:href="${track.spotifyUrl}" target="_blank">
+                    <img th:src="${track.albumImageUrl}" class="card-img-top" alt="Album cover">
+                    <div class="card-body">
+                        <h5 class="card-title" th:text="${track.name}">Track Name</h5>
+                        <p class="card-text" th:text="${track.artistName}">Artist Name</p>
+                    </div>
+                </a>
             </div>
         </div>
+        <p th:if="${topTracks.size() == 0}">No top tracks available.</p>
     </div>
 
-    <div class="col-md-6 mb-5">
+    <!-- Top Artists Section -->
+    <div class="mb-5">
         <h2 class="mb-4">Your Top Artists</h2>
         <div class="card-deck">
             <div class="card mb-4" th:each="artist : ${topArtists}">
-                <div class="icon-container">
-                    <i class="fas fa-user"></i>
-                </div>
-                <div class="card-body">
-                    <h5 class="card-title" th:text="${artist.name}"></h5>
-                </div>
+                <a th:href="${artist.spotifyUrl}" target="_blank">
+                    <img th:src="${artist.imageUrl}" class="card-img-top" alt="Artist image">
+                    <div class="card-body">
+                        <h5 class="card-title" th:text="${artist.name}">Artist Name</h5>
+                    </div>
+                </a>
             </div>
         </div>
+        <p th:if="${topArtists.size() == 0}">No top artists available.</p>
     </div>
 
+    <!-- Mood Buttons for Recommendations -->
+    <div class="mood-buttons">
+        <button class="mood-button" data-mood="happy">Happy</button>
+        <button class="mood-button" data-mood="chill">Chill</button>
+        <button class="mood-button" data-mood="energetic">Energetic</button>
+    </div>
 
+    <div id="recommendations"></div>
+
+    <!-- JavaScript for Recommendations -->
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('.mood-button');
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const mood = this.getAttribute('data-mood');
+                    fetch(`/recommendations/mood?mood=${mood}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        displayRecommendations(data);
+                    })
+                    .catch(error => console.error('Error fetching recommendations:', error));
+                });
+            });
+        });
+
+        function displayRecommendations(data) {
+            const recommendationSection = document.getElementById('recommendations');
+            recommendationSection.innerHTML = ''; // Clear previous recommendations
+
+            data.forEach(track => {
+                const trackElement = document.createElement('div');
+                trackElement.classList.add('recommendation');
+                trackElement.innerHTML = `
+                    <div class="track-info">
+                        <img src="${track.albumImageUrl}" alt="Album Cover">
+                        <p>${track.name} by ${track.artistName}</p>
+                    </div>
+                `;
+                recommendationSection.appendChild(trackElement);
+            });
+        }
+    </script>
+
+    <!-- Genre Distribution Section -->
+    <div class="mb-5">
+        <h2 class="mb-4">Your Genre Distribution</h2>
+        <canvas id="genreChart" width="400" height="200"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/data/genre-distribution')
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('genreChart').getContext('2d');
+                    const labels = Object.keys(data);
+                    const values = Object.values(data);
+
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: values,
+                                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                        }
+                    });
+                })
+                .catch(error => console.error('Error loading genre distribution:', error));
+        });
+    </script>
+
+    <!-- Listening Trends Section -->
+    <div class="mb-5">
+        <h2 class="mb-4">Listening Trends Over Time</h2>
+        <canvas id="trackTrendsChart" width="400" height="200"></canvas>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/data/top-tracks-over-time')
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('trackTrendsChart').getContext('2d');
+                    const labels = data.short_term.map(track => track.name);
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Last 4 Weeks',
+                                    data: data.short_term.map(track => track.popularity),
+                                    borderColor: '#FF6384',
+                                    fill: false
+                                },
+                                {
+                                    label: 'Last 6 Months',
+                                    data: data.medium_term.map(track => track.popularity),
+                                    borderColor: '#36A2EB',
+                                    fill: false
+                                },
+                                {
+                                    label: 'All Time',
+                                    data: data.long_term.map(track => track.popularity),
+                                    borderColor: '#FFCE56',
+                                    fill: false
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error loading listening trends:', error));
+        });
+    </script>
+
+    <!-- Upcoming Releases Section -->
+    <h3>Upcoming Releases</h3>
+    <div th:if="${upcomingReleases.size() == 0}">
+        No upcoming releases available.
+    </div>
+    <ul th:each="release : ${upcomingReleases}">
+        <li>
+            <strong th:text="${release.title}">Album Title</strong> by
+            <em th:text="${release.artist}">Artist</em> -
+            <span th:text="${release.releaseDate}">Release Date</span>
+        </li>
+    </ul>
+
+    <!-- Go to Spotify Button -->
     <div class="mt-4">
         <a href="https://open.spotify.com/" class="btn btn-primary"><i class="fab fa-spotify"></i> Go to Spotify</a>
     </div>
 </div>
 
+<!-- Footer Section -->
 <footer class="footer">
     Spotify Tracker &copy; 2024. All rights reserved.
 </footer>
 
-<!-- Add some animations and other features -->
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript">
@@ -165,6 +384,10 @@
             }, 500);
         });
     });
+
+    function changeTimeRange(timeRange) {
+        window.location.href = "/home?timeRange=" + timeRange;
+    }
 </script>
 </body>
 </html>
